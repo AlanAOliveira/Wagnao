@@ -1,6 +1,7 @@
 
 from flask import Flask, request, jsonify
 import sqlite3
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -72,6 +73,19 @@ def save_part_to_db(part):
         ))
         conn.commit()
 
+
+@app.route('/api/part/download', methods=['GET'])
+def download_parts():
+    db_file = 'app.db'
+    with sqlite3.connect(db_file) as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM parts')
+        rows = cur.fetchall()
+        columns = [desc[0] for desc in cur.description]
+        parts = [dict(zip(columns, row)) for row in rows]
+
+    pd.DataFrame(parts).to_csv('parts.csv', index=False)
+    return open('parts.csv', encoding='utf-8').read(), 200, {'Content-Type': 'text/csv'}
 
 
 @app.route('/health', methods=['GET'])
