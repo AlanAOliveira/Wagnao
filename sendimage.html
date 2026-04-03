@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capturar e Enviar para Google Vision API</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 50px auto; }
+        video { width: 100%; max-width: 400px; display: block; margin: 20px 0; }
+        canvas { display: none; }
+        button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Capturar Imagem e Enviar para Google Vision API</h1>
+    
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+    
+    <button onclick="startCamera()">Iniciar Câmera</button>
+    <button onclick="captureImage()">Capturar Foto</button>
+    <button onclick="sendToVision()">Enviar para Vision API</button>
+    
+    <div id="result"></div>
+
+    <script>
+        let imageData64 = null;
+
+        async function startCamera() {
+            const video = document.getElementById('video');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                alert('Erro ao acessar câmera: ' + err.message);
+            }
+        }
+
+        function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            imageData64 = canvas.toDataURL('image/jpeg').split(',')[1];
+            document.getElementById('result').innerText = 'Imagem capturada!';
+        }
+
+        async function sendToVision() {
+            if (!imageData64) {
+                alert('Capture uma imagem primeiro!');
+                return;
+            }
+
+            const apiKey = 'AIzaSyA-__5kiLyPzF27G2QafxK44PK2jFlNuFY'; // Substitua pela sua chave
+            const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+
+            const payload = {
+                requests: [{
+                    image: { content: imageData64 },
+                    features: [{ type: 'LABEL_DETECTION', maxResults: 10 }]
+                }]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (err) {
+                document.getElementById('result').innerText = 'Erro: ' + err.message;
+            }
+        }
+    </script>
+</body>
+</html>

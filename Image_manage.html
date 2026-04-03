@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Database Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        input[type="file"], input[type="text"], button {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .image-card {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+            background-color: #fafafa;
+            transition: transform 0.2s;
+        }
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .image-info {
+            padding: 12px;
+            text-align: center;
+        }
+        .image-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            padding: 6px 12px;
+            font-size: 12px;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📷 Image Database Management</h1>
+        
+        <div class="controls">
+            <input type="file" id="imageInput" accept="image/*" multiple>
+            <input type="text" id="searchInput" placeholder="Search images...">
+            <button onclick="uploadImages()">Upload</button>
+            <button onclick="clearDatabase()">Clear All</button>
+        </div>
+
+        <div id="gallery" class="gallery">
+            <div class="empty-state">No images yet. Upload some to get started!</div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'imageDatabase';
+
+        function loadImages() {
+            const gallery = document.getElementById('gallery');
+            const images = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            
+            if (images.length === 0) {
+                gallery.innerHTML = '<div class="empty-state">No images yet. Upload some to get started!</div>';
+                return;
+            }
+
+            gallery.innerHTML = images.map((img, idx) => `
+                <div class="image-card">
+                    <img src="${img.data}" alt="${img.name}">
+                    <div class="image-info">
+                        <div class="image-name">${img.name}</div>
+                        <button class="delete-btn" onclick="deleteImage(${idx})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function uploadImages() {
+            const fileInput = document.getElementById('imageInput');
+            const files = Array.from(fileInput.files);
+            const images = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    images.push({ name: file.name, data: e.target.result });
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+                    loadImages();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            fileInput.value = '';
+        }
+
+        function deleteImage(index) {
+            const images = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            images.splice(index, 1);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+            loadImages();
+        }
+
+        function clearDatabase() {
+            if (confirm('Are you sure? This will delete all images.')) {
+                localStorage.removeItem(STORAGE_KEY);
+                loadImages();
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.image-card');
+            cards.forEach(card => {
+                const name = card.querySelector('.image-name').textContent.toLowerCase();
+                card.style.display = name.includes(query) ? '' : 'none';
+            });
+        });
+
+        loadImages();
+    </script>
+</body>
+</html>
